@@ -1,0 +1,221 @@
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local StarterGui = game:GetService("StarterGui")
+local player = Players.LocalPlayer
+
+-- Rotation control state
+local rotationSpeed = 90
+local rotationEnabled = true
+
+-- Chat spam variables
+local chatSpamEnabled = false
+local chatMessages = {
+    "Pls donate:",
+    "pls donate for my birthday",
+    "your generosity will be rewarded <3"
+}
+local chatSpamInterval = 3 -- seconds
+
+-- Create GUI
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.Name = "Eazy"
+screenGui.ResetOnSpawn = false
+
+-- Main frame
+local frame = Instance.new("Frame", screenGui)
+frame.Size = UDim2.new(0, 200, 0, 180)
+frame.Position = UDim2.new(0, 20, 0, 100)
+frame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+frame.BorderSizePixel = 0
+frame.BackgroundTransparency = 0.2
+frame.Active = true
+frame.Draggable = true
+
+-- Title bar
+local titleBar = Instance.new("Frame", frame)
+titleBar.Size = UDim2.new(1, 0, 0, 24)
+titleBar.Position = UDim2.new(0, 0, 0, 0)
+titleBar.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+titleBar.BorderSizePixel = 0
+
+-- Title text
+local titleLabel = Instance.new("TextLabel", titleBar)
+titleLabel.Size = UDim2.new(1, -24, 1, 0)
+titleLabel.Position = UDim2.new(0, 5, 0, 0)
+titleLabel.Text = "Eazy V1.0"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 16
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Close button
+local closeButton = Instance.new("TextButton", titleBar)
+closeButton.Size = UDim2.new(0, 24, 1, 0)
+closeButton.Position = UDim2.new(1, -24, 0, 0)
+closeButton.Text = "X"
+closeButton.TextColor3 = Color3.fromRGB(255, 100, 100)
+closeButton.BackgroundTransparency = 1
+closeButton.Font = Enum.Font.SourceSansBold
+closeButton.TextSize = 18
+
+closeButton.MouseButton1Click:Connect(function()
+    frame.Visible = false
+    rotationEnabled = false
+    chatSpamEnabled = false
+end)
+
+-- Rotation Speed Label
+local label = Instance.new("TextLabel", frame)
+label.Size = UDim2.new(1, 0, 0, 20)
+label.Position = UDim2.new(0, 0, 0, 28)
+label.Text = "Rotation Speed:"
+label.TextColor3 = Color3.fromRGB(255, 255, 255)
+label.BackgroundTransparency = 1
+label.Font = Enum.Font.SourceSans
+label.TextSize = 16
+
+-- Rotation Speed Input
+local input = Instance.new("TextBox", frame)
+input.Size = UDim2.new(1, -10, 0, 24)
+input.Position = UDim2.new(0, 5, 0, 54)
+input.PlaceholderText = tostring(rotationSpeed)
+input.Text = tostring(rotationSpeed)
+input.TextColor3 = Color3.fromRGB(255, 255, 255)
+input.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+input.Font = Enum.Font.SourceSans
+input.TextSize = 16
+input.ClearTextOnFocus = false
+
+input.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local value = tonumber(input.Text)
+        if value then
+            rotationSpeed = value
+        end
+    end
+end)
+
+-- Chat spam toggle button
+local chatButton = Instance.new("TextButton", frame)
+chatButton.Size = UDim2.new(1, -10, 0, 24)
+chatButton.Position = UDim2.new(0, 5, 0, 84)
+chatButton.Text = "Toggle Chat Spam"
+chatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+chatButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+chatButton.Font = Enum.Font.SourceSans
+chatButton.TextSize = 16
+
+chatButton.MouseButton1Click:Connect(function()
+    chatSpamEnabled = not chatSpamEnabled
+    if chatSpamEnabled then
+        chatButton.Text = "Spam: ON"
+        chatButton.BackgroundColor3 = Color3.fromRGB(70, 120, 70)
+    else
+        chatButton.Text = "Spam: OFF"
+        chatButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+    end
+end)
+
+-- Spam Interval Label
+local intervalLabel = Instance.new("TextLabel", frame)
+intervalLabel.Size = UDim2.new(1, 0, 0, 20)
+intervalLabel.Position = UDim2.new(0, 0, 0, 114)
+intervalLabel.Text = "Spam Interval (sec):"
+intervalLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+intervalLabel.BackgroundTransparency = 1
+intervalLabel.Font = Enum.Font.SourceSans
+intervalLabel.TextSize = 16
+
+-- Spam Interval Input
+local intervalInput = Instance.new("TextBox", frame)
+intervalInput.Size = UDim2.new(1, -10, 0, 24)
+intervalInput.Position = UDim2.new(0, 5, 0, 140)
+intervalInput.PlaceholderText = tostring(chatSpamInterval)
+intervalInput.Text = tostring(chatSpamInterval)
+intervalInput.TextColor3 = Color3.fromRGB(255, 255, 255)
+intervalInput.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+intervalInput.Font = Enum.Font.SourceSans
+intervalInput.TextSize = 16
+intervalInput.ClearTextOnFocus = false
+
+intervalInput.FocusLost:Connect(function(enterPressed)
+    if enterPressed then
+        local value = tonumber(intervalInput.Text)
+        if value and value >= 0.1 then
+            chatSpamInterval = value
+        end
+    end
+end)
+
+-- Function to send chat messages
+local function sendChatMessage(message)
+    local defaultChat = ReplicatedStorage:FindFirstChild("DefaultChatSystemChatEvents")
+    if defaultChat then
+        local sayMessageRequest = defaultChat:FindFirstChild("SayMessageRequest")
+        if sayMessageRequest then
+            sayMessageRequest:FireServer(message, "All")
+            return true
+        end
+    end
+
+    local textChatService = game:GetService("TextChatService")
+    if textChatService then
+        local channels = textChatService:FindFirstChild("TextChannels")
+        if channels then
+            local generalChannel = channels:FindFirstChild("RBXGeneral")
+            if generalChannel then
+                generalChannel:SendAsync(message)
+                return true
+            end
+        end
+    end
+
+    local chatService = game:GetService("Chat")
+    if chatService then
+        local clientChatModules = chatService:FindFirstChild("ClientChatModules")
+        if clientChatModules then
+            local chatModule = clientChatModules:FindFirstChild("ChatMain")
+            if chatModule then
+                local chatEvents = require(chatModule)
+                chatEvents:ProcessCompletedChatMessage(message, Enum.ChatColor.White, Color3.new(1,1,1))
+                return true
+            end
+        end
+    end
+
+    return false
+end
+
+-- Chat spam loop
+task.spawn(function()
+    while true do
+        if chatSpamEnabled then
+            for _, message in ipairs(chatMessages) do
+                local success = sendChatMessage(message)
+                if not success then
+                    warn("Failed to send chat message - no chat system available")
+                    chatSpamEnabled = false
+                    chatButton.Text = "Spam: OFF"
+                    chatButton.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+                    break
+                end
+                task.wait(0.3)
+            end
+        end
+        task.wait(chatSpamInterval)
+    end
+end)
+
+-- Rotation loop
+RunService.RenderStepped:Connect(function(deltaTime)
+    if not rotationEnabled then return end
+    local character = player.Character
+    if character and character:FindFirstChild("HumanoidRootPart") then
+        local rootPart = character.HumanoidRootPart
+        local currentCFrame = rootPart.CFrame
+        local newCFrame = currentCFrame * CFrame.Angles(0, math.rad(rotationSpeed * deltaTime), 0)
+        rootPart.CFrame = newCFrame
+    end
+end)
